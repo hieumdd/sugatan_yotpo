@@ -1,0 +1,19 @@
+services:
+  app:
+    image: yotpo_selenium:latest
+    build:
+      context: .
+      args:
+        PYTHON_DEV: dev
+    container_name: yotpo_selenium
+    volumes:
+      - ./creds/${CREDS_FILENAME}.json:/tmp/${CREDS_FILENAME}.json
+      - ./data:/app/data
+    environment:
+      GOOGLE_APPLICATION_CREDENTIALS: /tmp/${CREDS_FILENAME}.json
+      K_SERVICE: dev
+      K_CONFIGURATION: dev
+      K_REVISION: dev-00001
+    ports:
+      - '8080:8080'
+    user: '0'
