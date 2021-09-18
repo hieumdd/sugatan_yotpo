@@ -11,6 +11,7 @@ fake-useragent = "^0.1.11"
 selenium-wire = "^4.5.2"
 requests = "^2.26.0"
 google-cloud-bigquery = "^2.26.0"
+functions-framework = "^2.2.1"
 
 [tool.poetry.dev-dependencies]
 black = "^21.9b0"
