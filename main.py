@@ -9,6 +9,7 @@ from seleniumwire import webdriver
 from selenium.webdriver.chrome.options import Options
 from fake_useragent import UserAgent
 import requests
+from google.cloud import bigquery
 
 URL = "https://login.yotpo.com/?product=sms"
 
@@ -25,6 +26,12 @@ CHROME_OPTIONS.add_experimental_option(
         "download.default_directory": "/tmp",
     },
 )
+
+BQ_CLIENT = bigquery.Client()
+DATASET = "SBLA_Yotpo"
+TABLE = "CampaignPerformance"
+
+NOW = datetime.utcnow()
 
 
 def get_csv_url():
@@ -141,22 +148,62 @@ def transform(rows):
             "orders": int(row["Orders"]),
             "aov": transform_currency(row["AOV"]),
             "unsubs_rate": transform_percentage(row["Unsubs %"]),
+            "_batched_at": NOW.isoformat(timespec='seconds'),
         }
         for row in rows
     ]
 
 
 def load(rows):
-    with open("test.json", "w") as f:
-        json.dump(rows, f)
+    return BQ_CLIENT.load_table_from_json(
+        rows,
+        f"{DATASET}._stage_{TABLE}",
+        job_config=bigquery.LoadJobConfig(
+            create_disposition="CREATE_IF_NEEDED",
+            write_disposition="WRITE_APPEND",
+            schema=[
+                {"name": "campaign_name", "type": "STRING"},
+                {"name": "scheduled_date", "type": "DATETIME"},
+                {"name": "revenue", "type": "FLOAT"},
+                {"name": "cost", "type": "FLOAT"},
+                {"name": "roi", "type": "FLOAT"},
+                {"name": "sent_msgs", "type": "INTEGER"},
+                {"name": "clicks", "type": "STRING"},
+                {"name": "ctr", "type": "FLOAT"},
+                {"name": "cvr", "type": "FLOAT"},
+                {"name": "orders", "type": "INTEGER"},
+                {"name": "aov", "type": "FLOAT"},
+                {"name": "unsubs_rate", "type": "FLOAT"},
+                {"name": "_batched_at", "type": "TIMESTAMP"},
+            ],
+        ),
+    ).result().output_rows
+
+def update():
+    query = f"""
+    CREATE OR REPLACE TABLB {DATASET}.{TABLE} AS
+    SELECT * EXCEPT (row_num)
+    FROM (
+        SELECT
+            *,
+            ROW_NUMBER() OVER (PARTITION BY campaign_name, scheduled_date ORDER BY _batched_at)
+            AS row_num
+        FROM {DATASET}._stage_{TABLE}
+    ) WHERE row_num = 1"""
+    BQ_CLIENT.query(query).result()
 
 
 def main(request):
     csv_url = get_csv_url()
     rows = get_data(csv_url)
-    rows = transform(rows)
-    load(rows)
-    return "okay"
+    response = {
+        "table": TABLE,
+        "num_processed": len(rows),
+    }
+    if len(rows):
+        rows = transform(rows)
+        response['output_rows'] = load(rows)
+    return response
 
 
 main({})

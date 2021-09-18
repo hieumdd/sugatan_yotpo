@@ -5,11 +5,12 @@ description = ""
 authors = ["HM <hieumdd@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "3.9"
 selenium = "^3.141.0"
 fake-useragent = "^0.1.11"
 selenium-wire = "^4.5.2"
 requests = "^2.26.0"
+google-cloud-bigquery = "^2.26.0"
 
 [tool.poetry.dev-dependencies]
 black = "^21.9b0"
