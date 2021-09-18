@@ -203,7 +203,5 @@ def main(request):
     if len(rows):
         rows = transform(rows)
         response['output_rows'] = load(rows)
+    print(response)
     return response
-
-
-main({})

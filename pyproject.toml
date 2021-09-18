@@ -1,11 +1,11 @@
 [tool.poetry]
-name = "yotpo_selenium"
+name = "sugatan_yotpo"
 version = "0.1.0"
 description = ""
 authors = ["HM <hieumdd@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "3.9"
+python = "~3.9"
 selenium = "^3.141.0"
 fake-useragent = "^0.1.11"
 selenium-wire = "^4.5.2"
@@ -15,7 +15,15 @@ google-cloud-bigquery = "^2.26.0"
 [tool.poetry.dev-dependencies]
 black = "^21.9b0"
 pytest = "^6.2.5"
+pytest-timeout = "^1.4.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+addopts = "-s --durations=0"
+timeout = 540
+testpaths = [
+    "test",
+]
