@@ -1,0 +1,47 @@
+name: CI/CD
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}
+  SERVICE: sugatan-yotpo
+  REGION: us-central1
+  PYTHON_ENV: prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Cloud SDK
+        uses: google-github-actions/setup-gcloud@v0.2.0
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          export_default_credentials: true
+
+      - name: Authorize Docker push
+        run: gcloud auth configure-docker
+
+      - name: Build and Push Container
+        run: |-
+          docker build -t gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }} --build-arg PYTHON_ENV=${{ env.PYTHON_ENV }} .
+          docker push gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{ github.sha }}
+
+      - name: Deploy to Main module to Cloud Run
+        run: >-
+          gcloud run deploy ${{ env.SERVICE }}
+          --image=gcr.io/${{ env.PROJECT_ID }}/${{ env.SERVICE }}:${{  github.sha }}
+          --concurrency=1
+          --memory=1Gi
+          --cpu=1
+          --platform=managed
+          --service-account=${{ secrets.GCP_SA }}
+          --region=${{ env.REGION }}
+          --timeout=900
+          --set-env-vars=PROJECT_ID=${{ secrets.PROJECT_ID}},USERNAME=${{ secrets.USERNAME }},Y_PWD=${{ secrets.Y_PWD }}
