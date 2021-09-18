@@ -14,6 +14,9 @@ services:
       K_SERVICE: dev
       K_CONFIGURATION: dev
       K_REVISION: dev-00001
+      USERNAME: ${USERNAME}
+      Y_PWD: ${Y_PWD}
+
     ports:
       - '8080:8080'
     user: '0'

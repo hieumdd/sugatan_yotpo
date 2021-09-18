@@ -40,8 +40,10 @@ def get_csv_url():
     Returns:
         string: S3 Blob URL
     """
-
-    driver = webdriver.Chrome("./chromedriver", options=CHROME_OPTIONS)
+    if os.getenv('PYTHON_ENV') == 'dev':
+        driver = webdriver.Chrome("./chromedriver", options=CHROME_OPTIONS)
+    else:
+        driver = webdriver.Chrome(options=CHROME_OPTIONS)
     driver.implicitly_wait(20)
 
     # Navtigate to URL
