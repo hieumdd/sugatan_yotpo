@@ -16,7 +16,7 @@ WORKDIR /app
 COPY poetry.lock pyproject.toml /app/
 
 RUN poetry config virtualenvs.create false \
-  && poetry install $(test "$PYTHON_ENV" == prod && echo "--no-dev") --no-interaction --no-ansi
+  && poetry install $(test "$PYTHON_ENV" == prod && echo "--no-dev") --no-root --no-interaction --no-ansi
 
 COPY . /app
 
