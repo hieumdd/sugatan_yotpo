@@ -143,7 +143,7 @@ def transform(rows):
             "cost": transform_currency(row["Cost"]),
             "roi": transform_percentage(row["ROI"]),
             "sent_msgs": int(row["Sent Msgs"]),
-            "clicks": row["Clicks"],
+            "clicks": int(row["Clicks"]),
             "ctr": transform_percentage(row["CTR"]),
             "cvr": transform_percentage(row["CVR"]),
             "orders": int(row["Orders"]),
