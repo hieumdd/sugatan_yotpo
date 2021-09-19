@@ -1,5 +1,4 @@
 import os
-import json
 import csv
 import time
 import re
@@ -122,7 +121,7 @@ def get_data(url):
 
 
 def transform(rows):
-    """Transform the data to ouR liking. Transform column to their correct data representation. THIS FUNCTION IS HARD-CODING
+    """Transform the data to ouR liking. Transform column to their correct data representation. **THIS FUNCTION IS HARD-CODING
 
     Args:
         rows (list): List of row
@@ -157,6 +156,15 @@ def transform(rows):
 
 
 def load(rows):
+    """Load data to stage table
+
+    Args:
+        rows (list): List of row
+
+    Returns:
+        int: Output rows
+    """
+
     return BQ_CLIENT.load_table_from_json(
         rows,
         f"{DATASET}._stage_{TABLE}",
@@ -182,6 +190,8 @@ def load(rows):
     ).result().output_rows
 
 def update():
+    """Update the main table"""
+
     query = f"""
     CREATE OR REPLACE TABLB {DATASET}.{TABLE} AS
     SELECT * EXCEPT (row_num)
