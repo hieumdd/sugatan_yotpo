@@ -13,8 +13,8 @@ from google.cloud import bigquery
 URL = "https://login.yotpo.com/?product=sms"
 
 CHROME_OPTIONS = Options()
-if os.getenv("PYTHON_ENV") == "prod":
-    CHROME_OPTIONS.add_argument("--headless")
+# if os.getenv("PYTHON_ENV") == "prod":
+CHROME_OPTIONS.add_argument("--headless")
 CHROME_OPTIONS.add_argument("--no-sandbox")
 CHROME_OPTIONS.add_argument("--window-size=1366,768")
 CHROME_OPTIONS.add_argument("--disable-gpu")
@@ -70,6 +70,27 @@ def get_csv_url():
     ]
     report_menu_item.click()
 
+    # Click generate report
+    generate_report = driver.find_elements_by_xpath(
+        "/html/body/communication-app-root/yo-layout/yo-base-layout/div/div/main/div/div[2]/communication-app-react-root/div[1]/main/div/div/div/div/div[2]/div[5]/div/div/button"
+    )[0]
+    generate_report.click()
+
+    # Select Last 30 days
+    last_30_days = driver.find_elements_by_xpath(
+        '//*[@id="app-content"]/communication-app-react-root/div[1]/div/div/div/div[2]/div/div[1]/div[2]/select/option[3]'
+    )[0]
+    last_30_days.click()
+
+    # Save & Export
+    save_export = driver.find_elements_by_xpath(
+        "/html/body/communication-app-root/yo-layout/yo-base-layout/div/div/main/div/div[2]/communication-app-react-root/div[1]/div/div/div/div[3]/button[2]"
+    )[0]
+    save_export.click()
+
+    # Wait for export
+    time.sleep(30)
+
     # Click export icon
     export_icon = driver.find_elements_by_xpath(
         '//*[@id="layout-parent"]/div/div/div/div[3]/div/div/div/div/div[2]/div/table/tbody/tr[1]/td[5]/div/button[1]'
@@ -77,7 +98,7 @@ def get_csv_url():
     export_icon.click()
 
     # Wait for XHR request
-    time.sleep(5)
+    time.sleep(10)
 
     # Intercept requests
     xhr_requests = [request.url for request in driver.requests if request.response]

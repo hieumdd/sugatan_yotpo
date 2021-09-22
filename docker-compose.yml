@@ -1,11 +1,11 @@
 services:
   app:
-    image: yotpo_selenium:latest
+    image: sugatan-yotpo:latest
     build:
       context: .
       args:
-        BUILD_ENV: dev
-    container_name: yotpo_selenium
+        BUILD_ENV: prod
+    container_name: sugatan-yotpo
     volumes:
       - ./creds/${CREDS_FILENAME}.json:/tmp/${CREDS_FILENAME}.json
       - ./data:/app/data
