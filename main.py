@@ -13,7 +13,8 @@ from google.cloud import bigquery
 URL = "https://login.yotpo.com/?product=sms"
 
 CHROME_OPTIONS = Options()
-CHROME_OPTIONS.add_argument("--headless")
+if os.getenv("PYTHON_ENV") == "prod":
+    CHROME_OPTIONS.add_argument("--headless")
 CHROME_OPTIONS.add_argument("--no-sandbox")
 CHROME_OPTIONS.add_argument("--window-size=1366,768")
 CHROME_OPTIONS.add_argument("--disable-gpu")
@@ -39,8 +40,9 @@ def get_csv_url():
     Returns:
         string: S3 Blob URL
     """
-    if os.getenv('PYTHON_ENV') == 'dev':
+    if os.getenv("PYTHON_ENV") == "dev":
         driver = webdriver.Chrome("./chromedriver", options=CHROME_OPTIONS)
+        driver
     else:
         driver = webdriver.Chrome(options=CHROME_OPTIONS)
     driver.implicitly_wait(20)
@@ -149,7 +151,7 @@ def transform(rows):
             "orders": int(row["Orders"]),
             "aov": transform_currency(row["AOV"]),
             "unsubs_rate": transform_percentage(row["Unsubs %"]),
-            "_batched_at": NOW.isoformat(timespec='seconds'),
+            "_batched_at": NOW.isoformat(timespec="seconds"),
         }
         for row in rows
     ]
@@ -165,29 +167,34 @@ def load(rows):
         int: Output rows
     """
 
-    return BQ_CLIENT.load_table_from_json(
-        rows,
-        f"{DATASET}._stage_{TABLE}",
-        job_config=bigquery.LoadJobConfig(
-            create_disposition="CREATE_IF_NEEDED",
-            write_disposition="WRITE_APPEND",
-            schema=[
-                {"name": "campaign_name", "type": "STRING"},
-                {"name": "scheduled_date", "type": "DATETIME"},
-                {"name": "revenue", "type": "FLOAT"},
-                {"name": "cost", "type": "FLOAT"},
-                {"name": "roi", "type": "FLOAT"},
-                {"name": "sent_msgs", "type": "INTEGER"},
-                {"name": "clicks", "type": "STRING"},
-                {"name": "ctr", "type": "FLOAT"},
-                {"name": "cvr", "type": "FLOAT"},
-                {"name": "orders", "type": "INTEGER"},
-                {"name": "aov", "type": "FLOAT"},
-                {"name": "unsubs_rate", "type": "FLOAT"},
-                {"name": "_batched_at", "type": "TIMESTAMP"},
-            ],
-        ),
-    ).result().output_rows
+    return (
+        BQ_CLIENT.load_table_from_json(
+            rows,
+            f"{DATASET}._stage_{TABLE}",
+            job_config=bigquery.LoadJobConfig(
+                create_disposition="CREATE_IF_NEEDED",
+                write_disposition="WRITE_APPEND",
+                schema=[
+                    {"name": "campaign_name", "type": "STRING"},
+                    {"name": "scheduled_date", "type": "DATETIME"},
+                    {"name": "revenue", "type": "FLOAT"},
+                    {"name": "cost", "type": "FLOAT"},
+                    {"name": "roi", "type": "FLOAT"},
+                    {"name": "sent_msgs", "type": "INTEGER"},
+                    {"name": "clicks", "type": "STRING"},
+                    {"name": "ctr", "type": "FLOAT"},
+                    {"name": "cvr", "type": "FLOAT"},
+                    {"name": "orders", "type": "INTEGER"},
+                    {"name": "aov", "type": "FLOAT"},
+                    {"name": "unsubs_rate", "type": "FLOAT"},
+                    {"name": "_batched_at", "type": "TIMESTAMP"},
+                ],
+            ),
+        )
+        .result()
+        .output_rows
+    )
+
 
 def update():
     """Update the main table"""
@@ -214,6 +221,6 @@ def main(request):
     }
     if len(rows):
         rows = transform(rows)
-        response['output_rows'] = load(rows)
+        response["output_rows"] = load(rows)
     print(response)
     return response

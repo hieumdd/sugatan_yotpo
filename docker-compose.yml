@@ -4,7 +4,7 @@ services:
     build:
       context: .
       args:
-        PYTHON_DEV: dev
+        BUILD_ENV: dev
     container_name: yotpo_selenium
     volumes:
       - ./creds/${CREDS_FILENAME}.json:/tmp/${CREDS_FILENAME}.json
