@@ -16,6 +16,7 @@ services:
       K_REVISION: dev-00001
       USERNAME: ${USERNAME}
       Y_PWD: ${Y_PWD}
+      PYTHON_ENV: prod
 
     ports:
       - '8080:8080'

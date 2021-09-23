@@ -10,7 +10,7 @@ import requests
 from google.cloud import bigquery
 
 CHROME_OPTIONS = Options()
-if os.getenv("BUILD_ENV") == "prod":
+if os.getenv("PYTHON_ENV") == "prod":
     CHROME_OPTIONS.add_argument("--headless")
 CHROME_OPTIONS.add_argument("--no-sandbox")
 CHROME_OPTIONS.add_argument("--window-size=1920,1080")
@@ -44,7 +44,7 @@ def get_report_request():
         str: getReport request URL
     """
 
-    if os.getenv("BUILD_ENV") == "dev":
+    if os.getenv("PYTHON_ENV") == "dev":
         driver = webdriver.Chrome("./chromedriver", options=CHROME_OPTIONS)
     else:
         driver = webdriver.Chrome(options=CHROME_OPTIONS)
