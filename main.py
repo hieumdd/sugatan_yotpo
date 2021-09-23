@@ -6,20 +6,23 @@ from datetime import datetime
 
 from seleniumwire import webdriver
 from selenium.webdriver.chrome.options import Options
-from fake_useragent import UserAgent
 import requests
 from google.cloud import bigquery
 
-URL = "https://login.yotpo.com/?product=sms"
-
 CHROME_OPTIONS = Options()
-# if os.getenv("PYTHON_ENV") == "prod":
-CHROME_OPTIONS.add_argument("--headless")
+if os.getenv("BUILD_ENV") == "prod":
+    CHROME_OPTIONS.add_argument("--headless")
 CHROME_OPTIONS.add_argument("--no-sandbox")
-CHROME_OPTIONS.add_argument("--window-size=1366,768")
+CHROME_OPTIONS.add_argument("--window-size=1920,1080")
 CHROME_OPTIONS.add_argument("--disable-gpu")
 CHROME_OPTIONS.add_argument("--disable-dev-shm-usage")
-CHROME_OPTIONS.add_argument(f"user-agent={UserAgent().random}")
+CHROME_OPTIONS.add_argument(
+    f"""
+    user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) 
+    AppleWebKit/537.36 (KHTML, like Gecko)
+    Chrome/87.0.4280.141 Safari/537.36
+    """
+)
 CHROME_OPTIONS.add_experimental_option(
     "prefs",
     {
@@ -34,20 +37,21 @@ TABLE = "TotalRevenueSMS"
 NOW = datetime.utcnow()
 
 
-def get_csv_url():
+def get_report_request():
     """Get & intercept CSV request from their FE to BE
 
     Returns:
-        string: S3 Blob URL
+        str: getReport request URL
     """
-    if os.getenv("PYTHON_ENV") == "dev":
+
+    if os.getenv("BUILD_ENV") == "dev":
         driver = webdriver.Chrome("./chromedriver", options=CHROME_OPTIONS)
     else:
         driver = webdriver.Chrome(options=CHROME_OPTIONS)
     driver.implicitly_wait(20)
 
     # Navtigate to URL
-    driver.get(URL)
+    driver.get("https://login.yotpo.com/?product=sms")
 
     # Input username & pwd
     username = driver.find_elements_by_xpath(
@@ -63,12 +67,11 @@ def get_csv_url():
     login_button = driver.find_elements_by_xpath('//*[@id="login-button"]')[0]
     login_button.click()
 
+    # Wait for login
+    time.sleep(10)
+
     # Navigate to Report
-    time.sleep(5)
-    report_menu_item = driver.find_elements_by_xpath('//*[@id="menu"]/li[9]/a/span[2]')[
-        0
-    ]
-    report_menu_item.click()
+    driver.get("https://smsbump.yotpo.com/sms/reports")
 
     # Click generate report
     generate_report = driver.find_elements_by_xpath(
@@ -88,25 +91,43 @@ def get_csv_url():
     )[0]
     save_export.click()
 
-    # Wait for export
-    time.sleep(30)
-
-    # Click export icon
-    export_icon = driver.find_elements_by_xpath(
-        '//*[@id="layout-parent"]/div/div/div/div[3]/div/div/div/div/div[2]/div/table/tbody/tr[1]/td[5]/div/button[1]'
-    )[0]
-    export_icon.click()
-
-    # Wait for XHR request
-    time.sleep(10)
-
-    # Intercept requests
+    # Intercept getReport request
+    time.sleep(5)
     xhr_requests = [request.url for request in driver.requests if request.response]
+    reports_request = [
+        request for request in xhr_requests if "reports/getReports" in request
+    ]
 
-    # Get CSV from their backend response
-    csv_url = [i for i in xhr_requests if "smsbump.s3" in i][0]
     driver.quit()
-    return csv_url
+    return reports_request[0]
+
+
+def get_csv_url(request, attempt=0):
+    """Get S3 blob from intercepted getReport request
+
+    Args:
+        request (str): getReport request URL
+        attempt (int, optional): Recursive attempt. Defaults to 0.
+
+    Raises:
+        Exception: Too many attempt
+
+    Returns:
+        str: S3 Blob
+    """
+
+    with requests.get(request) as r:
+        res = r.json()
+    if not res["error"]:
+        reports = res["data"]["reports"]
+        report = sorted(reports, key=lambda x: x["id"], reverse=True)[0]["object_url"]
+        return report
+    else:
+        if attempt > 5:
+            time.sleep(1)
+            return get_csv_url(request, attempt + 1)
+        else:
+            raise Exception
 
 
 def get_data(url):
@@ -131,7 +152,8 @@ def get_data(url):
 
 
 def transform(rows):
-    """Transform the data to ouR liking. Transform column to their correct data representation. **THIS FUNCTION IS HARD-CODING
+    """Transform the data to our liking. Transform column to their correct data representation.
+    **THIS FUNCTION IS HARD-CODING
 
     Args:
         rows (list): List of row
@@ -150,9 +172,6 @@ def transform(rows):
         lambda x: datetime.strptime(x, "%d.%m.%Y").strftime("%Y-%m-%d")
         if x != "--"
         else None
-    )
-    transform_datetime = lambda x: datetime.strptime(x, "%B %d %Y %H:%M").isoformat(
-        timespec="seconds"
     )
     return [
         {
@@ -233,7 +252,8 @@ def update():
 
 
 def main(request):
-    csv_url = get_csv_url()
+    report_request = get_report_request()
+    csv_url = get_csv_url(report_request)
     rows = get_data(csv_url)
     response = {
         "table": TABLE,
