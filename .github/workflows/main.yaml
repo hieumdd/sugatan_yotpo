@@ -44,4 +44,7 @@ jobs:
           --service-account=${{ secrets.GCP_SA }}
           --region=${{ env.REGION }}
           --timeout=900
-          --set-env-vars=PROJECT_ID=${{ secrets.PROJECT_ID}},USERNAME=${{ secrets.USERNAME }},Y_PWD=${{ secrets.Y_PWD }}
+          --set-env-vars='PROJECT_ID=${{ secrets.PROJECT_ID}},
+          USERNAME=${{ secrets.USERNAME }},
+          Y_PWD=${{ secrets.Y_PWD }},
+          PYTHON_ENV=${{ env.PYTHON_ENV }}'
