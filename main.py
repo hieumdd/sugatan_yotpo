@@ -74,12 +74,14 @@ def get_report_request():
     driver.get("https://smsbump.yotpo.com/sms/reports")
 
     # Click generate report
+    time.sleep(10)
     generate_report = driver.find_elements_by_xpath(
         "/html/body/communication-app-root/yo-layout/yo-base-layout/div/div/main/div/div[2]/communication-app-react-root/div[1]/main/div/div/div/div/div[2]/div[5]/div/div/button"
     )[0]
     generate_report.click()
 
     # Select Last 30 days
+    time.sleep(10)
     last_30_days = driver.find_elements_by_xpath(
         '//*[@id="app-content"]/communication-app-react-root/div[1]/div/div/div/div[2]/div/div[1]/div[2]/select/option[3]'
     )[0]
@@ -92,11 +94,12 @@ def get_report_request():
     save_export.click()
 
     # Intercept getReport request
-    time.sleep(5)
+    time.sleep(10)
     xhr_requests = [request.url for request in driver.requests if request.response]
     reports_request = [
         request for request in xhr_requests if "reports/getReports" in request
     ]
+    reports_request
 
     driver.quit()
     return reports_request[0]
