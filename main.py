@@ -10,8 +10,8 @@ import requests
 from google.cloud import bigquery
 
 CHROME_OPTIONS = Options()
-if os.getenv("PYTHON_ENV") == "prod":
-    CHROME_OPTIONS.add_argument("--headless")
+# if os.getenv("PYTHON_ENV") == "prod":
+CHROME_OPTIONS.add_argument("--headless")
 CHROME_OPTIONS.add_argument("--no-sandbox")
 CHROME_OPTIONS.add_argument("--window-size=1920,1080")
 CHROME_OPTIONS.add_argument("--disable-gpu")
@@ -52,6 +52,7 @@ def get_report_request():
 
     # Navtigate to URL
     driver.get("https://login.yotpo.com/?product=sms")
+    print("Home")
 
     # Input username & pwd
     username = driver.find_elements_by_xpath(
@@ -62,16 +63,19 @@ def get_report_request():
         '//*[@id="yo-sign-in"]/div/div/div/form/div[2]/input'
     )[0]
     password.send_keys(os.getenv("Y_PWD"))
+    print("Typed Login")
 
     # Click login
     login_button = driver.find_elements_by_xpath('//*[@id="login-button"]')[0]
     login_button.click()
+    print("Login")
 
     # Wait for login
     time.sleep(10)
 
     # Navigate to Report
     driver.get("https://smsbump.yotpo.com/sms/reports")
+    print("Navigate to Report")
 
     # Click generate report
     time.sleep(10)
@@ -79,6 +83,7 @@ def get_report_request():
         "/html/body/communication-app-root/yo-layout/yo-base-layout/div/div/main/div/div[2]/communication-app-react-root/div[1]/main/div/div/div/div/div[2]/div[5]/div/div/button"
     )[0]
     generate_report.click()
+    print("Generate Report")
 
     # Select Last 30 days
     time.sleep(10)
@@ -86,12 +91,14 @@ def get_report_request():
         '//*[@id="app-content"]/communication-app-react-root/div[1]/div/div/div/div[2]/div/div[1]/div[2]/select/option[3]'
     )[0]
     last_30_days.click()
+    print("Selected Time")
 
     # Save & Export
     save_export = driver.find_elements_by_xpath(
         "/html/body/communication-app-root/yo-layout/yo-base-layout/div/div/main/div/div[2]/communication-app-react-root/div[1]/div/div/div/div[3]/button[2]"
     )[0]
     save_export.click()
+    print("Export")
 
     # Intercept getReport request
     time.sleep(10)
@@ -99,7 +106,7 @@ def get_report_request():
     reports_request = [
         request for request in xhr_requests if "reports/getReports" in request
     ]
-    reports_request
+    print(reports_request)
 
     driver.quit()
     return reports_request[0]
@@ -124,9 +131,11 @@ def get_csv_url(request, attempt=0):
     if not res["error"]:
         reports = res["data"]["reports"]
         report = sorted(reports, key=lambda x: x["id"], reverse=True)[0]["object_url"]
+        assert report
         return report
     else:
         if attempt > 5:
+            print(res)
             time.sleep(1)
             return get_csv_url(request, attempt + 1)
         else:
