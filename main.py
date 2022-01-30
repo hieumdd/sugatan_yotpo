@@ -74,7 +74,7 @@ def get_report_request():
     time.sleep(10)
 
     # Navigate to Report
-    driver.get("https://smsbump.yotpo.com/sms/reports")
+    driver.get("https://smsbump.yotpo.com/sms/analytics/reports")
     print("Navigate to Report")
 
     # Click generate report
